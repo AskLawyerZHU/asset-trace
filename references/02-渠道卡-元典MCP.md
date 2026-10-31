@@ -1,21 +1,60 @@
 # 渠道卡：法律数据库 MCP（以元典 yuandian 为例）
 
-A 层主力。接口名以实际环境注册的 MCP 工具为准；本卡记录"查询目标→接口→关键词策略→已知盲区"。其他同类数据库 MCP 参照本卡自行映射。
+A 层主力。接口名以实际环境注册的 MCP 工具为准（v1.2 起按实测注册清单对齐）；本卡记录"基线 ID → 接口 → 关键词策略 → 已知盲区"。其他同类数据库 MCP 参照本卡自行映射。
 
-## 接口映射
+## 接口映射（按基线 ID，2026-10-29 实测环境对齐）
 
-| 查询目标 | 接口 | 关键词/参数策略 |
+### 法人线 F1–F12
+
+| 基线 | 查询目标 | 接口 | 关键词/参数策略 |
+|---|---|---|---|
+| F1 | 工商登记与状态 | `yuandian_search_companies` → `yuandian_get_company_basic_profile` / `get_company_profile` | 先名称检索锁定 USCC 再取档案；**登记状态"吊销/注销/存续"是主路径分岔点** |
+| F2 | 企业年报 | `yuandian_get_company_annual_report` | **重点：实缴出资额、认缴期限、股东变化**——实缴 0 + 认缴远期＝追加股东方向 |
+| F3 | 股东与一层持股 | basic/profile 的股东块 | 记认缴/实缴/出资时间；"出资比例 0.0"多为数据缺陷，以年报为准 |
+| F4 | 对外投资穿透 | `yuandian_list_company_external_investments` | 追到第二层（子公司→再调 basic_profile）；GP/LP 身份要区分 |
+| F5 | 裁判文书 | `yuandian_search_judicial_cases`（`litigating_company` 涉诉企业参数）+ `yuandian_list_company_litigation_document_summaries` + `yuandian_get_company_litigation_statistics` | **被告面/原告面分查**：原告面＝对外债权线索；statistics 先看总量再决定翻页深度 |
+| F6 | 执行案件（在册） | `yuandian_list_company_judicial_enforcement_records` ★v1.2 补录 | 被执行人记录直接可查；与企查查 `get_judgment_debtor_info` 交叉 |
+| F7 | 终本案件 | 同上（终本标记）+ 企查查 `get_terminated_cases` | 元典可能漏终本 → 以企查查终本金额为准，单源无记录不作反证 |
+| F8 | 失信被执行人 | `yuandian_list_company_judgment_defaulter_records` ★ | 与执行网交叉验证 |
+| F9 | 限制高消费 | 元典无 → 企查查 `get_high_consumption_restriction` | 申请人字段＝竞争债权人清单 |
+| F10 | 股权冻结/出质 | `yuandian_list_company_equity_freezes` / `yuandian_list_company_equity_pledges` | 记冻结法院、金额、期限；已冻结＝他人先手 |
+| F11 | 知识产权 | `yuandian_list_company_patents` / `_trademarks` / `_software_copyrights` / `_work_copyrights` | 数量+法律状态；"终止/无效"要记 |
+| F12 | 变动与公告 | `yuandian_list_company_registration_changes` / `_court_announcements` / `_court_hearing_notices` / `_abnormal_operations` / `_serious_violations` | 开庭案由含"变更追加被执行人"＝有竞争债权人在追；减资公告单独看 |
+
+### 统计总览（第一调分诊，★v1.6 实测补录）
+
+`yuandian_get_company_statistics_overview`（uscc 或 company_id）：一次返回 20+ 模块聚合统计与 Top20 摘要（商标/专利/作品著作权/软著、失信/被执行/开庭/法院公告、经营异常/严重违法/行政处罚/欠税、对外投资/股权出质/股权冻结/对外担保、变更记录、网站备案）。
+
+**用法**：Step 3 开跑时**先调它**，用聚合计数做两件事——①找出非零模块决定下钻优先级（省调用）；②与企查查 risk_scan 交叉分诊。**它是 Top20 摘要不是全量明细**，下钻仍要调对应列表接口。
+
+**口径纪律**：聚合计数与列表明细、与企查查可能不一致（实测：商标 422 vs 企查查 415；失信 4 vs 企查查 7）——引用计数必须标库，冲突标 ❗ 两说并陈。
+
+### 法人扩展项（按需启用）
+
+| 扩展 | 接口 | 用法 |
 |---|---|---|
-| 涉诉文书（民商事/执行/破产） | 裁判文书检索（yuandian_search_judicial_cases） | 当事人全名精确检索；自然人先同名甄别；再按案由过滤（民间借贷/买卖合同/劳务） |
-| 执行案件 | 被执行人/执行信息检索 | 按主体名查；**盲区：可能漏终本案件，单源无记录不作反证** |
-| 工商登记 | 企业基本信息/工商档案（yuandian_get_company_basic_profile 等） | 公司全名；取股东、法代、注册资本、分支机构 |
-| 对外投资与股权穿透 | 对外投资/股权穿透 | 追到第二层（子公司股东）；注意 GP/LP 身份与实缴 |
-| 企业年报 | 年报（yuandian_get_company_annual_report） | **重点：实缴出资额、认缴期限、股东变化**——实缴0+认缴远期=追加股东方向 |
-| 知识产权 | 专利/商标/软著（yuandian_list_company_patents 等） | 数量+法律状态；"终止/无效"要记 |
-| 开庭公告 | 开庭公告（yuandian_list_company_court_hearing_notices） | 案由含"变更追加被执行人执行异议之诉"=有竞争债权人在追 |
-| 股权冻结/出质 | 股权冻结、股权出质（yuandian_list_company_equity_pledges/freezes） | 记冻结法院与金额 |
-| 司法拍卖 | 如有对应接口 | 按被执行人名搜拍品 |
-| 失信/限消/终本 | 如有对应接口 | 有则自动查；无则归 B 层执行网四库人工待办 |
+| E5 欠税与税收违法 | `yuandian_list_company_tax_arrears` ★ | 欠税优先于普通债权，直接影响受偿预期 |
+| E5 税收/行政 | `yuandian_list_company_administrative_penalties` | 环保/税务/市监处罚＝或有负债 |
+| 隐性负债 | `yuandian_list_company_external_guarantees` ★（对外担保） | 担保余额＝隐性债务，评估"净资产"必查 |
+| E7 送达公告 | `_court_announcements` 过滤"公告送达" | 下落不明信号 |
+| 经营痕迹 | `yuandian_list_company_website_filings` | 网站/APP/小程序归属 → 经营收入线索 |
+| 破产 | `yuandian_search_judicial_cases`（case_category=强制清算与破产案件） | 破产受理状态决定执行程序走向 |
+
+### 自然人线 N1–N9
+
+| 基线 | 接口 | 说明 |
+|---|---|---|
+| N1 同名甄别 | `yuandian_search_judicial_cases`（keywords=姓名） | 按出生日期/户籍/案由逐一排除；**无身份锚点时全线中止** |
+| N2 文书双向 | 同上 + `yuandian_search_authoritative_cases` | province/court_name 过滤收窄 |
+| N3 执行案件 | `yuandian_search_judicial_cases`（case_category=执行案件）★ | **实测自然人执行裁定书可按名检索**，含终本裁定全文——v1.2 明确此路径 |
+| N4 终本 | 同上（case_closure_method=终结本次执行） | 终本裁定常载"未履行金额"与"无财产"认定 |
+| N9 对外债权 | 同上（case_category=民事案件，原告面） | 民事 0 件＝无对外债权，如实登记 |
+| N5/N6/N7 | 元典无自然人失信/限高/边控库 | 走企查查任职锚定（见 08 卡）或执行网人工 |
+
+### 语义检索与法条
+
+- `yuandian_semantic_search_cases`：自由描述案情检索类案（找"追股东"先例时用）
+- `yuandian_search_laws_and_regulations` / `get_legal_article_detail`：法条取原文，记 validity_status 与施行日
 
 ## 已知盲区与纪律（实战踩坑沉淀）
 
@@ -23,10 +62,12 @@ A 层主力。接口名以实际环境注册的 MCP 工具为准；本卡记录"
 2. **子公司状态冲突**：同一子公司在不同源显示"吊销 vs 存续"→ 标 ❗冲突，以公示系统人工复核为终。
 3. **注册资本口径差**：登记注册资本与年报认缴合计不一致 → 可能减资或未披露股东，列入"调工商内档"待办，不下"抽逃出资"结论。
 4. **姓名字段**：自然人检索必须先甄别同名（见 04 文件），甄别记录保留被排除案例与理由。
-5. **涉诉文书列表不全**：实测某公司文书接口仅返回 6 篇，而第三方库显示执行案件 8+ 件、追加案 3 件 → 涉诉线必须与第三方库诉讼档案时间线交叉，元典列表作"已核子集"。
-6. **自然人无专用接口**：自然人任职/持股/执行情况无元典接口（企业接口不适用于个人）→ 走 04 文件对应 B 层（第三方库人工查）。
-7. **profile"出资比例 0.0"多为数据缺陷**：股东详情出资比例显示 0.0 时，以年报认缴数据为准，勿当真 0 出资结论来源。
-8. 法条核验：涉及追加/撤销/加速到期等法条时用法律法规接口取现行有效版本原文，记 validity_status 与施行日。
+5. **涉诉文书列表不全**：实测某公司文书接口仅返回 6 篇，而第三方库显示执行案件 8+ 件 → 涉诉线必须与第三方库诉讼档案时间线交叉，元典列表作"已核子集"。
+6. **自然人无专用企业级接口**：自然人任职/持股/失信/限高无元典接口 → 任职走企查查任职锚定法，失信/限高/边控走执行网人工。
+7. **profile"出资比例 0.0"多为数据缺陷**：以年报认缴数据为准，勿当真 0 出资结论来源。
+8. **法条不引记忆**：涉及追加/撤销/加速到期等法条时用法条接口取现行有效版本原文。
+9. **检索深度**：`search_judicial_cases` 默认 top_k=10，跑基线必须显式给 top_k（建议 30–50）或用分页，否则静默截断造成"假 0 件"。
+10. **聚合统计≠明细≠第三方库**：statistics_overview 与各列表接口、与企查查之间存在计数口径差（2026-10-31 实测：商标 422/415、失信 4/7），以明细接口+人工复核为终，计数引用标库。
 
 ## 降级规则
 
