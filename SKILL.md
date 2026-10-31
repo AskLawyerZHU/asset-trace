@@ -1,7 +1,11 @@
 ---
 name: asset-trace
 version: 1.6.0
-description: 执行财产速查（asset-trace）。当用户需要为执行案件查找被执行人财产线索，或对合作方/签约主体做资信尽调与背调（查失信、限高、涉诉涉执、实缴出资）时使用——输入被执行人（自然人或公司）信息，按"渠道矩阵"通过公开途径（法律数据库MCP、企业风险库、执行信息公开网、中登网、司法拍卖等）批量检索，产出《财产线索检索报告》：线索池+查全度核对表+人工待办+调查令方向清单。触发词：查财产线索、被执行人财产、执行案件财产、终本恢复、财产线索排查、执行财产速查、追债找财产、查一下这家公司、资信调查、背景调查、能不能合作、对方失信吗。本技能只做公开途径检索与方向指引，不替代法院查控与律师调查令。
+display_name: 执行财产速查
+display_name_en: Asset Trace
+description_zh: 执行财产速查。当用户需要为执行案件查找被执行人财产线索，或对合作方/签约主体做资信尽调与背调（查失信、限高、涉诉涉执、实缴出资）时使用——输入被执行人（自然人或公司）信息，按"渠道矩阵"通过公开途径（法律数据库MCP、企业风险库、执行信息公开网、中登网、司法拍卖等）批量检索，产出《财产线索检索报告》：线索池+查全度核对表+人工待办+调查令方向清单。触发词：查财产线索、被执行人财产、执行案件财产、终本恢复、财产线索排查、执行财产速查、追债找财产、查一下这家公司、资信调查、背景调查、能不能合作、对方失信吗。本技能只做公开途径检索与方向指引，不替代法院查控与律师调查令。
+description_en: Asset trace for enforcement cases. Batch-search judgment debtor assets through public channels (legal database MCP, corporate risk databases, China Enforcement Information Disclosure, chattel mortgage registry, judicial auction, etc.), producing an asset-clue report with a clue pool, full-coverage checklist, manual to-dos, and an investigation-order direction list. For asset discovery in execution cases and due diligence / background checks (dishonest debtor, consumption restriction, litigation and enforcement, paid-in capital). Public-channel search only; does not replace court asset control or attorney investigation orders.
+description: 执行财产速查。当用户需要为执行案件查找被执行人财产线索，或对合作方/签约主体做资信尽调与背调（查失信、限高、涉诉涉执、实缴出资）时使用——输入被执行人（自然人或公司）信息，按"渠道矩阵"通过公开途径（法律数据库MCP、企业风险库、执行信息公开网、中登网、司法拍卖等）批量检索，产出《财产线索检索报告》：线索池+查全度核对表+人工待办+调查令方向清单。触发词：查财产线索、被执行人财产、执行案件财产、终本恢复、财产线索排查、执行财产速查、追债找财产、查一下这家公司、资信调查、背景调查、能不能合作、对方失信吗。本技能只做公开途径检索与方向指引，不替代法院查控与律师调查令。
 agent_created: true
 ---
 
